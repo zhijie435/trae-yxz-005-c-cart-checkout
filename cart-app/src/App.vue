@@ -137,6 +137,15 @@ function handleEditClose() {
   showEditModal.value = false
   editingItem.value = null
 }
+
+function handleDeleteItem(id) {
+  cartList.value = cartList.value.filter(item => item.id !== id)
+  selectedIds.value.delete(id)
+  selectedIds.value = new Set(selectedIds.value)
+  if (cartList.value.length === 0) {
+    isEditing.value = false
+  }
+}
 </script>
 
 <template>
@@ -153,6 +162,7 @@ function handleEditClose() {
             :selected="selectedIds.has(item.id)"
             @select="handleSelect"
             @update:quantity="handleUpdateQuantity"
+            @delete="handleDeleteItem"
           />
         </div>
       </template>
