@@ -7,25 +7,27 @@
     </div>
     <div class="cart-navbar__title">购物车</div>
     <div class="cart-navbar__right" @click="handleManage">
-      <span class="cart-navbar__manage">{{ isEditing ? '完成' : '管理' }}</span>
+      <span class="cart-navbar__manage">{{ props.isEditing ? '完成' : '管理' }}</span>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+const props = defineProps({
+  isEditing: {
+    type: Boolean,
+    default: false
+  }
+})
 
 const emit = defineEmits(['back', 'manage'])
-
-const isEditing = ref(false)
 
 function handleBack() {
   emit('back')
 }
 
 function handleManage() {
-  isEditing.value = !isEditing.value
-  emit('manage', isEditing.value)
+  emit('manage', !props.isEditing)
 }
 </script>
 

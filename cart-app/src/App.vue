@@ -1,11 +1,13 @@
 <script setup>
 import { ref, computed } from 'vue'
 import CartNavBar from './components/CartNavBar.vue'
+import CartGroupHeader from './components/CartGroupHeader.vue'
 import CartItem from './components/CartItem.vue'
 import CartFooter from './components/CartFooter.vue'
 import EditSpecModal from './components/EditSpecModal.vue'
+import { useCart } from './composables/useCart'
 
-const cartList = ref([
+const initialCartList = [
   {
     id: 1,
     name: 'Apple iPhone 15 Pro Max 256GB 原色钛金属',
@@ -45,77 +47,81 @@ const cartList = ref([
     price: 49.9,
     quantity: 1,
     priceMap: { '1天': 19.9, '3天': 49.9, '7天': 79.9, '15天': 109.9, '30天': 159.9, '90天': 329.9, '180天': 599.9, '365天': 999.9 }
+  },
+  {
+    id: 5,
+    name: 'Nike Air Max 270 运动鞋 黑白配色',
+    image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Nike%20Air%20Max%20270%20sneakers%20black%20white%20product%20photo&image_size=square',
+    spec: '尺码: 42',
+    rentPeriod: '7天',
+    price: 25.9,
+    quantity: 1,
+    priceMap: { '1天': 5.9, '3天': 12.9, '7天': 25.9, '15天': 45.9, '30天': 79.9, '90天': 199.9, '180天': 349.9, '365天': 599.9 }
+  },
+  {
+    id: 6,
+    name: '宜家 KALLAX 卡莱克 书架 白色',
+    image: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=IKEA%20KALLAX%20white%20bookshelf%20product%20photo&image_size=square',
+    spec: '尺寸: 77x147cm',
+    rentPeriod: '30天',
+    price: 19.9,
+    quantity: 2,
+    priceMap: { '1天': 3.9, '3天': 8.9, '7天': 14.9, '15天': 19.9, '30天': 19.9, '90天': 49.9, '180天': 89.9, '365天': 149.9 }
   }
-])
+]
 
-const isEditing = ref(false)
-const selectedIds = ref(new Set())
+const {
+  cartList,
+  isEditing,
+  selectedIds,
+  groupedItems,
+  groupState,
+  isAllSelected,
+  selectedCount,
+  selectedItemCount,
+  totalPrice,
+  platformDiscount,
+  finalPrice,
+  toggleSelect,
+  toggleSelectAll,
+  toggleGroupSelect,
+  updateQuantity,
+  deleteItem,
+  deleteSelectedItems,
+  getSelectedSingleItem,
+  updateItemSpec,
+  enterEditMode,
+  exitEditMode
+} = useCart(initialCartList)
+
 const showEditModal = ref(false)
-const editingItem = ref(null)
-
-const isAllSelected = computed(() => {
-  return cartList.value.length > 0 && selectedIds.value.size === cartList.value.length
-})
-
-const selectedCount = computed(() => selectedIds.value.size)
-
-const totalPrice = computed(() => {
-  return cartList.value
-    .filter(item => selectedIds.value.has(item.id))
-    .reduce((sum, item) => sum + item.price * item.quantity, 0)
-})
-
-const platformDiscount = computed(() => {
-  const price = totalPrice.value
-  if (price >= 200) return 30
-  if (price >= 100) return 10
-  if (price >= 50) return 5
-  return 0
-})
-
-const finalPrice = computed(() => {
-  return Math.max(0, totalPrice.value - platformDiscount.value)
-})
-
-const selectedItemCount = computed(() => {
-  return cartList.value
-    .filter(item => selectedIds.value.has(item.id))
-    .reduce((sum, item) => sum + item.quantity, 0)
-})
 
 function handleBack() {
   console.log('返回')
 }
 
 function handleManage(editing) {
-  isEditing.value = editing
-  if (!editing) {
-    selectedIds.value = new Set()
+  if (editing) {
+    enterEditMode()
+  } else {
+    exitEditMode()
   }
 }
 
 function handleSelect(id) {
-  if (selectedIds.value.has(id)) {
-    selectedIds.value.delete(id)
-  } else {
-    selectedIds.value.add(id)
-  }
-  selectedIds.value = new Set(selectedIds.value)
+  toggleSelect(id)
 }
 
 function handleSelectAll() {
-  if (isAllSelected.value) {
-    selectedIds.value = new Set()
-  } else {
-    selectedIds.value = new Set(cartList.value.map(item => item.id))
-  }
+  toggleSelectAll()
+}
+
+function handleGroupSelect(groupId) {
+  toggleGroupSelect(groupId)
 }
 
 function handleUpdateQuantity(id, quantity) {
-  const item = cartList.value.find(item => item.id === id)
-  if (item) {
-    item.quantity = quantity
-  }
+  updateQuantity(id, quantity)
 }
 
 function handleCheckout() {
@@ -124,71 +130,68 @@ function handleCheckout() {
 }
 
 function handleDelete() {
-  if (selectedIds.value.size === 0) return
-  if (confirm(`确定删除选中的 ${selectedIds.value.size} 件商品吗？`)) {
-    cartList.value = cartList.value.filter(item => !selectedIds.value.has(item.id))
-    selectedIds.value = new Set()
-    if (cartList.value.length === 0) {
-      isEditing.value = false
-    }
+  if (selectedCount.value === 0) return
+  if (confirm(`确定删除选中的 ${selectedCount.value} 件商品吗？`)) {
+    deleteSelectedItems()
   }
 }
 
 function handleEditSpec() {
-  if (selectedIds.value.size !== 1) return
-  const id = Array.from(selectedIds.value)[0]
-  const item = cartList.value.find(item => item.id === id)
+  const item = getSelectedSingleItem()
   if (item) {
-    editingItem.value = item
     showEditModal.value = true
   }
 }
 
 function handleEditConfirm(data) {
-  const item = cartList.value.find(item => item.id === data.id)
-  if (item) {
-    item.spec = data.spec
-    item.rentPeriod = data.rentPeriod
-    item.quantity = data.quantity
-    if (data.price !== undefined) {
-      item.price = data.price
-    }
-  }
+  updateItemSpec(data.id, data)
   showEditModal.value = false
-  editingItem.value = null
 }
 
 function handleEditClose() {
   showEditModal.value = false
-  editingItem.value = null
 }
 
 function handleDeleteItem(id) {
-  cartList.value = cartList.value.filter(item => item.id !== id)
-  selectedIds.value.delete(id)
-  selectedIds.value = new Set(selectedIds.value)
-  if (cartList.value.length === 0) {
-    isEditing.value = false
-  }
+  deleteItem(id)
 }
+
+const editingItem = computed(() => getSelectedSingleItem())
 </script>
 
 <template>
   <div class="cart-page">
-    <CartNavBar @back="handleBack" @manage="handleManage" />
+    <CartNavBar :is-editing="isEditing" @back="handleBack" @manage="handleManage" />
     <div class="cart-page__content">
       <template v-if="cartList.length > 0">
-        <div class="cart-page__list">
-          <CartItem
-            v-for="item in cartList"
-            :key="item.id"
-            :item="item"
-            :is-editing="isEditing"
-            :selected="selectedIds.has(item.id)"
-            @select="handleSelect"
-            @update:quantity="handleUpdateQuantity"
-            @delete="handleDeleteItem"
-          />
+        <div class="cart-page__groups">
+          <div
+            v-for="group in groupedItems"
+            :key="group.id"
+            class="cart-page__group"
+          >
+            <CartGroupHeader
+              :group-name="group.name"
+              :is-editing="isEditing"
+              :is-all-selected="groupState[group.id]?.isAllSelected ?? false"
+              :is-partial-selected="groupState[group.id]?.isPartialSelected ?? false"
+              :selected-count="groupState[group.id]?.selectedCount ?? 0"
+              :total-count="groupState[group.id]?.totalCount ?? 0"
+              @select="handleGroupSelect(group.id)"
+            />
+            <div class="cart-page__list">
+              <CartItem
+                v-for="item in group.items"
+                :key="item.id"
+                :item="item"
+                :is-editing="isEditing"
+                :selected="selectedIds.has(item.id)"
+                @select="handleSelect"
+                @update:quantity="handleUpdateQuantity"
+                @delete="handleDeleteItem"
+              />
+            </div>
+          </div>
         </div>
       </template>
       <template v-else>
@@ -231,8 +234,16 @@ function handleDeleteItem(id) {
   min-height: calc(100vh - 44px);
 }
 
+.cart-page__groups {
+  padding-top: 4px;
+}
+
+.cart-page__group {
+  margin-bottom: 8px;
+}
+
 .cart-page__list {
-  padding: 12px 16px;
+  padding: 0 16px 4px;
 }
 
 .cart-page__empty {
