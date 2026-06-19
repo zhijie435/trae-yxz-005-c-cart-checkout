@@ -1,52 +1,69 @@
 <template>
   <div class="cart-footer">
-    <div
-      class="cart-footer__select-all"
-      @click="handleSelectAll"
-    >
-      <div class="cart-footer__checkbox" :class="{ 'cart-footer__checkbox--checked': isAllSelected }">
-        <svg v-if="isAllSelected" class="cart-footer__check-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 6L9 17L4 12" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <span class="cart-footer__select-text">全选</span>
-    </div>
-
-    <template v-if="!isEditing">
-      <div class="cart-footer__total">
-        <span class="cart-footer__total-label">合计：</span>
-        <span class="cart-footer__total-price">
-          <span class="cart-footer__total-symbol">¥</span>
-          <span class="cart-footer__total-value">{{ totalPrice.toFixed(2) }}</span>
-        </span>
-      </div>
+    <div class="cart-footer__main">
       <div
-        class="cart-footer__checkout"
-        :class="{ 'cart-footer__checkout--disabled': selectedCount === 0 }"
-        @click="handleCheckout"
+        class="cart-footer__select-all"
+        @click="handleSelectAll"
       >
-        去结算({{ selectedCount }})
+        <div class="cart-footer__checkbox" :class="{ 'cart-footer__checkbox--checked': isAllSelected }">
+          <svg v-if="isAllSelected" class="cart-footer__check-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 6L9 17L4 12" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="cart-footer__select-text">全选</span>
       </div>
-    </template>
 
-    <template v-else>
-      <div class="cart-footer__actions">
-        <div
-          class="cart-footer__action-btn cart-footer__action-btn--secondary"
-          :class="{ 'cart-footer__action-btn--disabled': selectedCount !== 1 }"
-          @click="handleEditSpec"
-        >
-          修改规格
+      <template v-if="!isEditing">
+        <div class="cart-footer__info">
+          <div class="cart-footer__row">
+            <div class="cart-footer__label-group">
+              <span class="cart-footer__label">已选</span>
+              <span class="cart-footer__value cart-footer__value--count">{{ selectedItemCount }}件</span>
+            </div>
+            <div class="cart-footer__label-group">
+              <span class="cart-footer__label">合计</span>
+              <span class="cart-footer__value cart-footer__value--price">
+                <span class="cart-footer__symbol">¥</span>
+                <span class="cart-footer__amount">{{ totalPrice.toFixed(2) }}</span>
+              </span>
+            </div>
+          </div>
+          <div v-if="platformDiscount > 0" class="cart-footer__row cart-footer__row--discount">
+            <span class="cart-footer__discount-label">平台优惠</span>
+            <span class="cart-footer__discount-value">-¥{{ platformDiscount.toFixed(2) }}</span>
+          </div>
         </div>
         <div
-          class="cart-footer__action-btn cart-footer__action-btn--danger"
-          :class="{ 'cart-footer__action-btn--disabled': selectedCount === 0 }"
-          @click="handleDelete"
+          class="cart-footer__checkout"
+          :class="{ 'cart-footer__checkout--disabled': selectedCount === 0 }"
+          @click="handleCheckout"
         >
-          删除({{ selectedCount }})
+          <span v-if="platformDiscount > 0" class="cart-footer__checkout-final">
+            ¥{{ finalPrice.toFixed(2) }}
+          </span>
+          去结算({{ selectedCount }})
         </div>
-      </div>
-    </template>
+      </template>
+
+      <template v-else>
+        <div class="cart-footer__actions">
+          <div
+            class="cart-footer__action-btn cart-footer__action-btn--secondary"
+            :class="{ 'cart-footer__action-btn--disabled': selectedCount !== 1 }"
+            @click="handleEditSpec"
+          >
+            修改规格
+          </div>
+          <div
+            class="cart-footer__action-btn cart-footer__action-btn--danger"
+            :class="{ 'cart-footer__action-btn--disabled': selectedCount === 0 }"
+            @click="handleDelete"
+          >
+            删除({{ selectedCount }})
+          </div>
+        </div>
+      </template>
+    </div>
   </div>
 </template>
 
@@ -64,7 +81,19 @@ const props = defineProps({
     type: Number,
     default: 0
   },
+  selectedItemCount: {
+    type: Number,
+    default: 0
+  },
   totalPrice: {
+    type: Number,
+    default: 0
+  },
+  platformDiscount: {
+    type: Number,
+    default: 0
+  },
+  finalPrice: {
     type: Number,
     default: 0
   }
@@ -101,13 +130,17 @@ function handleEditSpec() {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 56px;
   background-color: #ffffff;
-  display: flex;
-  align-items: center;
-  padding: 0 16px;
   border-top: 1px solid #f0f0f0;
   z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.cart-footer__main {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  min-height: 56px;
 }
 
 .cart-footer__select-all {
@@ -116,6 +149,7 @@ function handleEditSpec() {
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
+  flex-shrink: 0;
 }
 
 .cart-footer__checkbox {
@@ -146,41 +180,80 @@ function handleEditSpec() {
   color: #333333;
 }
 
-.cart-footer__total {
+.cart-footer__info {
   flex: 1;
   display: flex;
-  align-items: baseline;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
   margin-right: 12px;
+  min-width: 0;
 }
 
-.cart-footer__total-label {
-  font-size: 14px;
+.cart-footer__row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.cart-footer__row--discount {
+  margin-top: 2px;
+}
+
+.cart-footer__label-group {
+  display: flex;
+  align-items: baseline;
+}
+
+.cart-footer__label {
+  font-size: 13px;
+  color: #999999;
+  margin-right: 4px;
+}
+
+.cart-footer__value {
+  font-size: 13px;
   color: #333333;
 }
 
-.cart-footer__total-price {
-  display: flex;
-  align-items: baseline;
-  color: #ff2442;
-}
-
-.cart-footer__total-symbol {
-  font-size: 14px;
+.cart-footer__value--count {
   font-weight: 500;
 }
 
-.cart-footer__total-value {
-  font-size: 20px;
+.cart-footer__value--price {
+  display: flex;
+  align-items: baseline;
+  color: #333333;
+}
+
+.cart-footer__symbol {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.cart-footer__amount {
+  font-size: 15px;
   font-weight: 600;
   margin-left: 1px;
 }
 
+.cart-footer__discount-label {
+  font-size: 12px;
+  color: #ff2442;
+}
+
+.cart-footer__discount-value {
+  font-size: 12px;
+  color: #ff2442;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
 .cart-footer__checkout {
-  min-width: 110px;
-  height: 40px;
+  min-width: 120px;
+  height: 44px;
   background: linear-gradient(135deg, #ff6b35 0%, #ff2442 100%);
-  border-radius: 20px;
+  border-radius: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -190,6 +263,15 @@ function handleEditSpec() {
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
+  flex-shrink: 0;
+  flex-direction: column;
+  padding: 0 16px;
+}
+
+.cart-footer__checkout-final {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
 }
 
 .cart-footer__checkout--disabled {
@@ -218,6 +300,7 @@ function handleEditSpec() {
   user-select: none;
   -webkit-user-select: none;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .cart-footer__action-btn--secondary {

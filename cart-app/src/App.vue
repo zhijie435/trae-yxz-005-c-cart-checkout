@@ -61,6 +61,24 @@ const totalPrice = computed(() => {
     .reduce((sum, item) => sum + item.price * item.quantity, 0)
 })
 
+const platformDiscount = computed(() => {
+  const price = totalPrice.value
+  if (price >= 200) return 30
+  if (price >= 100) return 10
+  if (price >= 50) return 5
+  return 0
+})
+
+const finalPrice = computed(() => {
+  return Math.max(0, totalPrice.value - platformDiscount.value)
+})
+
+const selectedItemCount = computed(() => {
+  return cartList.value
+    .filter(item => selectedIds.value.has(item.id))
+    .reduce((sum, item) => sum + item.quantity, 0)
+})
+
 function handleBack() {
   console.log('返回')
 }
@@ -68,7 +86,7 @@ function handleBack() {
 function handleManage(editing) {
   isEditing.value = editing
   if (!editing) {
-    selectedIds.value.clear()
+    selectedIds.value = new Set()
   }
 }
 
@@ -83,7 +101,7 @@ function handleSelect(id) {
 
 function handleSelectAll() {
   if (isAllSelected.value) {
-    selectedIds.value.clear()
+    selectedIds.value = new Set()
   } else {
     selectedIds.value = new Set(cartList.value.map(item => item.id))
   }
@@ -105,7 +123,7 @@ function handleDelete() {
   if (selectedIds.value.size === 0) return
   if (confirm(`确定删除选中的 ${selectedIds.value.size} 件商品吗？`)) {
     cartList.value = cartList.value.filter(item => !selectedIds.value.has(item.id))
-    selectedIds.value.clear()
+    selectedIds.value = new Set()
     if (cartList.value.length === 0) {
       isEditing.value = false
     }
@@ -176,7 +194,10 @@ function handleDeleteItem(id) {
       :is-editing="isEditing"
       :is-all-selected="isAllSelected"
       :selected-count="selectedCount"
+      :selected-item-count="selectedItemCount"
       :total-price="totalPrice"
+      :platform-discount="platformDiscount"
+      :final-price="finalPrice"
       @select-all="handleSelectAll"
       @checkout="handleCheckout"
       @delete="handleDelete"
@@ -196,7 +217,7 @@ function handleDeleteItem(id) {
 .cart-page {
   min-height: 100vh;
   background-color: #f5f5f5;
-  padding-bottom: 56px;
+  padding-bottom: 72px;
 }
 
 .cart-page__content {
