@@ -13,7 +13,8 @@ const cartList = ref([
     spec: '颜色: 原色钛金属',
     rentPeriod: '30天',
     price: 39.9,
-    quantity: 1
+    quantity: 1,
+    priceMap: { '1天': 5.9, '3天': 14.9, '7天': 24.9, '15天': 34.9, '30天': 39.9, '90天': 99.9, '180天': 179.9, '365天': 329.9 }
   },
   {
     id: 2,
@@ -22,7 +23,8 @@ const cartList = ref([
     spec: '颜色: 黑色',
     rentPeriod: '7天',
     price: 15.9,
-    quantity: 2
+    quantity: 2,
+    priceMap: { '1天': 3.9, '3天': 9.9, '7天': 15.9, '15天': 24.9, '30天': 39.9, '90天': 89.9, '180天': 159.9, '365天': 279.9 }
   },
   {
     id: 3,
@@ -31,7 +33,8 @@ const cartList = ref([
     spec: '尺寸: 14英寸',
     rentPeriod: '90天',
     price: 89.9,
-    quantity: 1
+    quantity: 1,
+    priceMap: { '1天': 9.9, '3天': 19.9, '7天': 39.9, '15天': 59.9, '30天': 79.9, '90天': 89.9, '180天': 159.9, '365天': 279.9 }
   },
   {
     id: 4,
@@ -40,7 +43,8 @@ const cartList = ref([
     spec: '版本: 畅飞套装',
     rentPeriod: '3天',
     price: 49.9,
-    quantity: 1
+    quantity: 1,
+    priceMap: { '1天': 19.9, '3天': 49.9, '7天': 79.9, '15天': 109.9, '30天': 159.9, '90天': 329.9, '180天': 599.9, '365天': 999.9 }
   }
 ])
 
@@ -146,6 +150,9 @@ function handleEditConfirm(data) {
     item.spec = data.spec
     item.rentPeriod = data.rentPeriod
     item.quantity = data.quantity
+    if (data.price !== undefined) {
+      item.price = data.price
+    }
   }
   showEditModal.value = false
   editingItem.value = null

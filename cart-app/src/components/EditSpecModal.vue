@@ -21,7 +21,7 @@
               <div class="edit-modal__product-name">{{ item.name }}</div>
               <div class="edit-modal__product-price">
                 <span class="edit-modal__price-symbol">¥</span>
-                <span class="edit-modal__price-value">{{ item.price }}</span>
+                <span class="edit-modal__price-value">{{ currentPrice }}</span>
                 <span class="edit-modal__price-unit">/件</span>
               </div>
             </div>
@@ -77,7 +77,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
   visible: {
@@ -98,6 +98,11 @@ const periodOptions = ['1天', '3天', '7天', '15天', '30天', '90天', '180�
 const selectedSpec = ref('')
 const selectedPeriod = ref('')
 const selectedQuantity = ref(1)
+
+const currentPrice = computed(() => {
+  if (!props.item || !props.item.priceMap) return props.item?.price ?? 0
+  return props.item.priceMap[selectedPeriod.value] ?? props.item.price
+})
 
 watch(() => props.visible, (newVal) => {
   if (newVal && props.item) {
@@ -136,7 +141,8 @@ function handleConfirm() {
     id: props.item.id,
     spec: selectedSpec.value,
     rentPeriod: selectedPeriod.value,
-    quantity: selectedQuantity.value
+    quantity: selectedQuantity.value,
+    price: currentPrice.value
   })
 }
 </script>
